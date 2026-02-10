@@ -1,75 +1,101 @@
+import { useState } from "react";
 import { useCmsConfig } from "@/hooks/use-cms-config";
 import { useNews } from "@/hooks/use-news";
+import { NewsCard } from "@/components/news/NewsCard";
+import { FilterBar } from "@/components/news/FilterBar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from "@/hooks/use-debounce";
 
 function App() {
+  const [keyword, setKeyword] = useState("");
+  const [selectedSource, setSelectedSource] = useState("all");
+
+  const debouncedKeyword = useDebounce(keyword, 300);
+
   const { data: config, isLoading: isConfigLoading } = useCmsConfig();
-  const { data: news, isLoading: isNewsLoading, error: newsError } = useNews();
 
-  if (isConfigLoading)
-    return <div className="p-10">Loading config from Sanity...</div>;
+  const { data: news, isLoading: isNewsLoading } = useNews();
 
-  return (
-    <div className="p-10 space-y-8 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold">News Aggregator Logic Test</h1>
-
-      {/* CMS Data (для перевірки) */}
-      <div className="flex gap-4">
-        <div className="border p-4 rounded shadow bg-white flex-1">
-          <h2 className="text-xl font-bold mb-2">Allowed Sources (CMS):</h2>
-          <ul className="list-disc pl-5">
-            {config?.allowedSources.map((s) => (
-              <li key={s.id}>{s.name}</li>
-            ))}
-          </ul>
-        </div>
-        <div className="border p-4 rounded shadow bg-white flex-1">
-          <h2 className="text-xl font-bold mb-2">Topics (CMS):</h2>
-          {config?.topics.map((t) => (
-            <div key={t.id}>
-              <span className="font-bold">{t.name}:</span>{" "}
-              {t.keywords.join(", ")}
-            </div>
+  if (isConfigLoading) {
+    return (
+      <div className="min-h-screen bg-zinc-50 p-8 flex flex-col gap-8">
+        <Skeleton className="h-12 w-[300px]" />
+        <Skeleton className="h-20 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="h-[250px] w-full" />
           ))}
         </div>
       </div>
+    );
+  }
 
-      {/* News Data */}
-      <div className="border p-4 rounded shadow bg-white">
-        <h2 className="text-xl font-bold mb-4">
-          Filtered News ({news?.length || 0} articles found):
-        </h2>
+  const displayNews = news?.filter((article) => {
+    if (selectedSource !== "all") {
+      const sourceObj = config?.allowedSources.find(
+        (s) => s.id === selectedSource,
+      );
+      if (
+        sourceObj &&
+        article.source.name.toLowerCase() !== sourceObj.name.toLowerCase()
+      ) {
+        return false;
+      }
+    }
 
-        {isNewsLoading && <p>Loading news from NewsAPI...</p>}
-        {newsError && (
-          <p className="text-red-500">Error: {newsError.message}</p>
-        )}
+    if (debouncedKeyword.trim() !== "") {
+      if (
+        !article.title?.toLowerCase().includes(debouncedKeyword.toLowerCase())
+      ) {
+        return false;
+      }
+    }
 
-        <div className="space-y-4">
-          {news?.map((article, idx) => (
-            <div key={idx} className="border-b pb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="bg-zinc-800 text-white text-xs px-2 py-1 rounded">
-                  {article.source.name}
-                </span>
-                {article.matchedTopic && (
-                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">
-                    Topic: {article.matchedTopic}
-                  </span>
-                )}
-                <span className="text-gray-400 text-xs">
-                  {new Date(article.publishedAt).toLocaleDateString()}
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold">{article.title}</h3>
+    return true;
+  });
+
+  return (
+    <div className="min-h-screen bg-zinc-50 font-sans">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <header className="mb-8">
+          <h1 className="text-4xl font-extrabold tracking-tight text-zinc-900">
+            News Aggregator
+          </h1>
+          <p className="text-zinc-500 mt-2">
+            Curated feed controlled by Sanity CMS
+          </p>
+        </header>
+
+        <FilterBar
+          sources={config?.allowedSources || []}
+          keyword={keyword}
+          setKeyword={setKeyword}
+          source={selectedSource}
+          setSource={setSelectedSource}
+        />
+
+        <main>
+          {isNewsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Skeleton key={i} className="h-[250px] w-full" />
+              ))}
             </div>
-          ))}
-
-          {news?.length === 0 && !isNewsLoading && (
-            <p className="text-gray-500">
-              No news found matching your allowed CMS sources.
-            </p>
+          ) : displayNews?.length === 0 ? (
+            <div className="text-center py-20 text-zinc-500">
+              <p className="text-xl">No news found.</p>
+              <p className="text-sm mt-2">
+                Try adjusting your filters or adding sources in CMS.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayNews?.map((article, index) => (
+                <NewsCard key={`${article.url}-${index}`} article={article} />
+              ))}
+            </div>
           )}
-        </div>
+        </main>
       </div>
     </div>
   );
