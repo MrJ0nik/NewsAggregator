@@ -1,7 +1,11 @@
 import axios from "axios";
 
+const newsApiBaseUrl = import.meta.env.DEV
+  ? "https://newsapi.org/v2"
+  : "/api/news";
+
 export const newsApiClient = axios.create({
-  baseURL: "https://newsapi.org/v2",
+  baseURL: newsApiBaseUrl,
   headers: {
     "X-Api-Key": import.meta.env.VITE_NEWS_API_KEY,
   },
