@@ -7,8 +7,13 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EnrichedArticle } from "@/types";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { ExternalLink, ChevronRight } from "lucide-react";
 
 export function NewsCard({ article }: { article: EnrichedArticle }) {
+  const navigate = useNavigate();
+
   const formattedDate = new Date(article.publishedAt).toLocaleDateString(
     "en-US",
     {
@@ -17,6 +22,10 @@ export function NewsCard({ article }: { article: EnrichedArticle }) {
       day: "numeric",
     },
   );
+
+  const handleReadMore = () => {
+    navigate("/article", { state: { article } });
+  };
 
   return (
     <Card className="flex flex-col h-full hover:shadow-lg transition-shadow duration-200">
@@ -40,16 +49,20 @@ export function NewsCard({ article }: { article: EnrichedArticle }) {
         </p>
       </CardContent>
 
-      <CardFooter className="flex justify-between items-center text-sm text-zinc-400 border-t pt-4">
-        <span>{formattedDate}</span>
-        <a
-          href={article.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 hover:underline font-medium"
-        >
-          Read full &rarr;
-        </a>
+      <CardFooter className="flex flex-col gap-4 border-t pt-4">
+        <div className="w-full text-sm text-zinc-400 text-left">
+          {formattedDate}
+        </div>
+        <div className="flex w-full justify-between gap-2">
+          <Button variant="outline" size="sm" asChild className="flex-1">
+            <a href={article.url} target="_blank" rel="noopener noreferrer">
+              View source <ExternalLink className="ml-2 h-3 w-3" />
+            </a>
+          </Button>
+          <Button size="sm" onClick={handleReadMore} className="flex-1">
+            View more <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );

@@ -26,10 +26,6 @@ export const useNews = (filters?: { keyword?: string; source?: string }) => {
     queryFn: async () => {
       const articles = await fetchNews(filters);
 
-      console.log(
-        "Сирі новини з NewsAPI:",
-        articles.map((a) => a.source.name),
-      );
       if (!config) return articles as EnrichedArticle[];
 
       const allowedSourceNames = config.allowedSources.map((s) =>
